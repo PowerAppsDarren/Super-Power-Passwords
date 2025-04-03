@@ -1,0 +1,19 @@
+Super-Power-Passwords/
+├── README.md                  # Project documentation
+├── LICENSE                    # License information
+├── requirements.txt           # Dependencies
+├── setup.py                   # Package and distribution information
+├── .gitignore                 # Files to ignore in version control
+├── src/                       # Source code
+│   └── superpower_passwords/  # Main package
+│       ├── __init__.py        # Makes the directory a package
+│       ├── main.py            # Your main application code
+│       ├── generator.py       # Password generation logic
+│       └── gui.py             # GUI-related code
+├── tests/                     # Test files
+│   ├── __init__.py
+│   └── test_generator.py      # Tests for the password generator
+├── docs/                      # Documentation files
+│   └── usage.md               # Usage documentation
+└── examples/                  # Example files
+    └── passphrases.txt        # Example generated passwords
