@@ -2,6 +2,7 @@ import random                              # Import the random module to select 
 import tkinter as tk                      # Import tkinter for GUI elements
 from tkinter import filedialog, messagebox  # Import dialog and message tools from tkinter
 import os  # Add this at the top if not already present
+import tkinter.ttk as ttk  # Add this for the slider
 
 # 📝 Lists of words to use in password generation
 # Each list contains 50 words, and we randomly choose one word from each to form a passphrase
@@ -66,7 +67,7 @@ def generate_password():
 # --- Update generate_and_display to use new controls ---
 def generate_and_display():
     try:
-        count = int(entry_count.get())
+        count = get_count()
         if count <= 0:
             raise ValueError
 
@@ -112,25 +113,54 @@ MONO_FONT = ("Consolas", 16)
 output_options_frame = tk.Frame(root)
 output_options_frame.pack(fill="x", pady=10, padx=10)
 
-# Select/Deselect all checkboxes
+# --- Checkbox style for bigger checkboxes ---
+style = ttk.Style()
+style.configure("Big.TCheckbutton", font=("Segoe UI", 20))
+
+# Select/Deselect all checkboxes with dynamic text
 select_all_var = tk.BooleanVar(value=True)
+def update_select_all_text():
+    if select_all_var.get():
+        chk_select_all.config(text="All options below on")
+    else:
+        chk_select_all.config(text="All options below off")
 def toggle_all():
     val = select_all_var.get()
     save_to_file_var.set(val)
     display_var.set(val)
     copy_var.set(val)
-chk_select_all = tk.Checkbutton(output_options_frame, text="Select all below / Deselect all below", variable=select_all_var, font=BIG_FONT, command=toggle_all)
+    update_select_all_text()
+select_all_var.trace_add("write", lambda *args: update_select_all_text())
+chk_select_all = ttk.Checkbutton(
+    output_options_frame,
+    text="All options below on",
+    variable=select_all_var,
+    style="Big.TCheckbutton",
+    command=toggle_all
+)
 chk_select_all.grid(row=0, column=0, columnspan=4, sticky="w", pady=(0,10))
 
 # Output to file
 save_to_file_var = tk.BooleanVar(value=True)
-chk_save_to_file = tk.Checkbutton(output_options_frame, text="Output to file", variable=save_to_file_var, font=BIG_FONT)
-chk_save_to_file.grid(row=1, column=0, sticky="w")
+chk_save_to_file = ttk.Checkbutton(
+    output_options_frame,
+    text="Output to file",
+    variable=save_to_file_var,
+    style="Big.TCheckbutton"
+)
+chk_save_to_file.grid(row=1, column=0, sticky="w", pady=(0,0))
+
+# File path entry and browse button, indented and resizable
+file_path_frame = tk.Frame(output_options_frame)
+file_path_frame.grid(row=2, column=0, columnspan=4, sticky="ew", padx=(40,0), pady=(0,10))
+output_options_frame.grid_columnconfigure(0, weight=1)
+file_path_frame.grid_columnconfigure(0, weight=1)
+file_path_frame.grid_columnconfigure(1, weight=0)
 
 default_path = os.path.join(os.getcwd(), "passphrases.txt")
 file_path_var = tk.StringVar(value=default_path)
-entry_file_path = tk.Entry(output_options_frame, textvariable=file_path_var, width=40, font=BIG_FONT)
-entry_file_path.grid(row=1, column=1, padx=(10,5))
+entry_file_path = tk.Entry(file_path_frame, textvariable=file_path_var, font=BIG_FONT)
+entry_file_path.grid(row=0, column=0, sticky="ew", padx=(0,5))
 def browse_file():
     file = filedialog.asksaveasfilename(
         defaultextension=".txt",
@@ -139,27 +169,56 @@ def browse_file():
     )
     if file:
         file_path_var.set(file)
-btn_browse = tk.Button(output_options_frame, text="Browse", font=BIG_FONT, command=browse_file)
-btn_browse.grid(row=1, column=2, padx=(5,0))
+btn_browse = tk.Button(file_path_frame, text="Browse", font=BIG_FONT, command=browse_file)
+btn_browse.grid(row=0, column=1, sticky="ew")
 
 # Output to display
 display_var = tk.BooleanVar(value=True)
-chk_display = tk.Checkbutton(output_options_frame, text="Display down below", variable=display_var, font=BIG_FONT)
-chk_display.grid(row=2, column=0, sticky="w", pady=(10,0))
+chk_display = ttk.Checkbutton(
+    output_options_frame,
+    text="Display down below",
+    variable=display_var,
+    style="Big.TCheckbutton"
+)
+chk_display.grid(row=3, column=0, sticky="w", pady=(0,0))
 
-# Copy to clipboard
-copy_var = tk.BooleanVar(value=False)
-chk_copy = tk.Checkbutton(output_options_frame, text="Copy to clipboard", variable=copy_var, font=BIG_FONT)
-chk_copy.grid(row=2, column=1, sticky="w", pady=(10,0))
+# Copy to clipboard below display
+copy_var = tk.BooleanVar(value=True)
+chk_copy = ttk.Checkbutton(
+    output_options_frame,
+    text="Copy to clipboard",
+    variable=copy_var,
+    style="Big.TCheckbutton"
+)
+chk_copy.grid(row=4, column=0, sticky="w", pady=(0,0))
 
-# --- Number of passwords ---
-frame = tk.Frame(root)
-frame.pack(pady=10)
-label_count = tk.Label(frame, text="Number of passwords:", font=BIG_FONT)
-label_count.pack(side=tk.LEFT)
-entry_count = tk.Entry(frame, width=5, font=BIG_FONT)
-entry_count.insert(0, "20")
-entry_count.pack(side=tk.LEFT, padx=5)
+# --- Number of passwords slider ---
+slider_frame = tk.Frame(root)
+slider_frame.pack(fill="x", pady=10)
+label_count = tk.Label(slider_frame, text="Number of passwords:", font=BIG_FONT)
+label_count.pack(side=tk.LEFT, padx=(0,10))
+
+def slider_tick(val):
+    val = int(float(val))
+    if val < 25:
+        slider.set(1)
+    elif val % 25 != 0:
+        slider.set(round(val / 25) * 25)
+    entry_count_var.set(str(int(slider.get())))
+
+slider = tk.Scale(
+    slider_frame, from_=1, to=200, orient="horizontal", length=400,
+    showvalue=0, tickinterval=25, resolution=1, font=BIG_FONT, command=slider_tick
+)
+slider.set(25)
+slider.pack(side=tk.LEFT, fill="x", expand=True)
+
+entry_count_var = tk.StringVar(value="25")
+entry_count = tk.Entry(slider_frame, width=5, font=BIG_FONT, textvariable=entry_count_var, state="readonly")
+entry_count.pack(side=tk.LEFT, padx=10)
+
+def get_count():
+    return int(entry_count_var.get())
 
 # --- Generate button ---
 btn_generate = tk.Button(root, text="Generate", font=BIG_FONT, command=lambda: generate_and_display())
