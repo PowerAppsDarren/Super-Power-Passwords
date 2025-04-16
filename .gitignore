@@ -1,4 +1,4 @@
-
+passphrases.txt
 passphrases*.txt
 
 # Byte-compiled / optimized / DLL files
@@ -25,3 +25,4 @@ env/
 # OS specific files
 .DS_Store
 Thumbs.db
+
