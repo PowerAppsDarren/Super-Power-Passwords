@@ -4,6 +4,17 @@ from tkinter import filedialog, messagebox  # Import dialog and message tools fr
 import os  # Add this at the top if not already present
 import tkinter.ttk as ttk  # Add this for the slider
 
+# --- Color palette ---
+PALETTE = {
+    "blue": "#3B82F6",         # vivid blue for buttons
+    "blue_dark": "#1E40AF",    # dark blue for text
+    "blue_light": "#E8F1FB",   # very faint blue for background
+    "blue_lighter": "#F3F8FE", # even lighter for highlights
+    "blue_darker": "#172554",  # for status bar or accents
+    "white": "#FFFFFF",
+    "gray": "#E5E7EB"
+}
+
 # 📝 Lists of words to use in password generation
 # Each list contains 50 words, and we randomly choose one word from each to form a passphrase
 
@@ -69,17 +80,21 @@ def generate_and_display():
     try:
         count = get_count()
         if count <= 0:
-            raise ValueError
+            set_status("Please select at least 1 password.")
+            return
 
         passwords = [generate_password() for _ in range(count)]
 
         # Output to file
         if save_to_file_var.get():
             output_file = file_path_var.get()
-            with open(output_file, 'w') as file:
-                for password in passwords:
-                    file.write(password + '\n')
-            messagebox.showinfo("Success", f"{count} passwords saved to {output_file}")
+            try:
+                with open(output_file, 'w') as file:
+                    for password in passwords:
+                        file.write(password + '\n')
+                set_status(f"{count} passwords saved to {output_file}")
+            except Exception as e:
+                set_status(f"Error saving to file: {e}")
 
         # Output to display
         if display_var.get():
@@ -88,6 +103,7 @@ def generate_and_display():
             for password in passwords:
                 output_box.insert(tk.END, password + '\n')
             output_box.config(state="normal")
+            set_status(f"{count} passwords displayed.")
         else:
             output_box.delete("1.0", tk.END)
 
@@ -95,27 +111,60 @@ def generate_and_display():
         if copy_var.get():
             root.clipboard_clear()
             root.clipboard_append('\n'.join(passwords))
-            messagebox.showinfo("Copied", "Passwords copied to clipboard.")
+            set_status("Passwords copied to clipboard.")
+
+        if not (save_to_file_var.get() or display_var.get() or copy_var.get()):
+            set_status("No output option selected.")
 
     except ValueError:
-        messagebox.showerror("Invalid input", "Please enter a valid number of passwords.")
+        set_status("Please enter a valid number of passwords.")
 
 # 🚀 Setup the GUI window using Tkinter
 root = tk.Tk()
 root.title("Passphrase Generator")
-root.geometry("800x600")  # Bigger window
+root.geometry("900x700")
+root.configure(bg=PALETTE["blue_light"])
 
 # --- Styles for accessibility ---
-BIG_FONT = ("Segoe UI", 16)
-MONO_FONT = ("Consolas", 16)
+BIG_FONT = ("Segoe UI", 18)
+MONO_FONT = ("Consolas", 18)
 
 # --- Output options frame at the top ---
-output_options_frame = tk.Frame(root)
+output_options_frame = tk.Frame(root, bg=PALETTE["blue_light"])
 output_options_frame.pack(fill="x", pady=10, padx=10)
 
 # --- Checkbox style for bigger checkboxes ---
 style = ttk.Style()
-style.configure("Big.TCheckbutton", font=("Segoe UI", 20))
+style.theme_use("clam")
+style.configure("Big.TCheckbutton",
+    font=BIG_FONT,
+    background=PALETTE["blue_light"],
+    foreground=PALETTE["blue_dark"],
+    indicatorcolor=PALETTE["blue"],
+    indicatordiameter=32,
+    indicatormargin=8
+)
+style.configure("Big.TButton",
+    font=BIG_FONT,
+    background=PALETTE["blue"],
+    foreground=PALETTE["white"],
+    borderwidth=0,
+    focusthickness=3,
+    focuscolor=PALETTE["blue_dark"]
+)
+style.map("Big.TButton",
+    background=[("active", PALETTE["blue_dark"])],
+    foreground=[("active", PALETTE["white"])]
+)
+
+# --- Status bar ---
+status_var = tk.StringVar(value="Ready.")
+status_bar = tk.Label(root, textvariable=status_var, anchor="w", font=("Segoe UI", 14),
+                      bg=PALETTE["blue_darker"], fg=PALETTE["white"], bd=0, relief="flat", height=2)
+status_bar.pack(side="bottom", fill="x")
+
+def set_status(msg):
+    status_var.set(msg)
 
 # Select/Deselect all checkboxes with dynamic text
 select_all_var = tk.BooleanVar(value=True)
@@ -151,7 +200,7 @@ chk_save_to_file = ttk.Checkbutton(
 chk_save_to_file.grid(row=1, column=0, sticky="w", pady=(0,0))
 
 # File path entry and browse button, indented and resizable
-file_path_frame = tk.Frame(output_options_frame)
+file_path_frame = tk.Frame(output_options_frame, bg=PALETTE["blue_light"])
 file_path_frame.grid(row=2, column=0, columnspan=4, sticky="ew", padx=(40,0), pady=(0,10))
 output_options_frame.grid_columnconfigure(0, weight=1)
 file_path_frame.grid_columnconfigure(0, weight=1)
@@ -159,7 +208,7 @@ file_path_frame.grid_columnconfigure(1, weight=0)
 
 default_path = os.path.join(os.getcwd(), "passphrases.txt")
 file_path_var = tk.StringVar(value=default_path)
-entry_file_path = tk.Entry(file_path_frame, textvariable=file_path_var, font=BIG_FONT)
+entry_file_path = tk.Entry(file_path_frame, textvariable=file_path_var, font=BIG_FONT, fg=PALETTE["blue_dark"], bg=PALETTE["blue_lighter"])
 entry_file_path.grid(row=0, column=0, sticky="ew", padx=(0,5))
 def browse_file():
     file = filedialog.asksaveasfilename(
@@ -169,7 +218,8 @@ def browse_file():
     )
     if file:
         file_path_var.set(file)
-btn_browse = tk.Button(file_path_frame, text="Browse", font=BIG_FONT, command=browse_file)
+btn_browse = tk.Button(file_path_frame, text="Browse", font=BIG_FONT, command=browse_file,
+                       bg=PALETTE["blue"], fg=PALETTE["white"], activebackground=PALETTE["blue_dark"], activeforeground=PALETTE["white"])
 btn_browse.grid(row=0, column=1, sticky="ew")
 
 # Output to display
@@ -193,9 +243,9 @@ chk_copy = ttk.Checkbutton(
 chk_copy.grid(row=4, column=0, sticky="w", pady=(0,0))
 
 # --- Number of passwords slider ---
-slider_frame = tk.Frame(root)
+slider_frame = tk.Frame(root, bg=PALETTE["blue_light"])
 slider_frame.pack(fill="x", pady=10)
-label_count = tk.Label(slider_frame, text="Number of passwords:", font=BIG_FONT)
+label_count = tk.Label(slider_frame, text="Number of passwords:", font=BIG_FONT, bg=PALETTE["blue_light"], fg=PALETTE["blue_dark"])
 label_count.pack(side=tk.LEFT, padx=(0,10))
 
 def slider_tick(val):
@@ -208,24 +258,27 @@ def slider_tick(val):
 
 slider = tk.Scale(
     slider_frame, from_=1, to=200, orient="horizontal", length=400,
-    showvalue=0, tickinterval=25, resolution=1, font=BIG_FONT, command=slider_tick
+    showvalue=0, tickinterval=25, resolution=1, font=BIG_FONT, command=slider_tick,
+    bg=PALETTE["blue_light"], fg=PALETTE["blue_dark"], troughcolor=PALETTE["gray"],
+    highlightthickness=0, bd=0
 )
 slider.set(25)
 slider.pack(side=tk.LEFT, fill="x", expand=True)
 
 entry_count_var = tk.StringVar(value="25")
-entry_count = tk.Entry(slider_frame, width=5, font=BIG_FONT, textvariable=entry_count_var, state="readonly")
+entry_count = tk.Entry(slider_frame, width=5, font=BIG_FONT, textvariable=entry_count_var, state="readonly", justify="center")
 entry_count.pack(side=tk.LEFT, padx=10)
 
 def get_count():
     return int(entry_count_var.get())
 
 # --- Generate button ---
-btn_generate = tk.Button(root, text="Generate", font=BIG_FONT, command=lambda: generate_and_display())
+btn_generate = tk.Button(root, text="Generate", font=BIG_FONT, command=lambda: generate_and_display(),
+                        bg=PALETTE["blue"], fg=PALETTE["white"], activebackground=PALETTE["blue_dark"], activeforeground=PALETTE["white"])
 btn_generate.pack(pady=10)
 
 # --- Output box (multi-line text area) ---
-output_box = tk.Text(root, font=MONO_FONT, wrap="none")
+output_box = tk.Text(root, font=MONO_FONT, wrap="none", fg=PALETTE["blue_dark"], bg=PALETTE["blue_lighter"])
 output_box.pack(fill="both", expand=True, padx=10, pady=10, anchor="sw")
 
 # Make output_box resize with window
